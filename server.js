@@ -9,6 +9,11 @@ const path = require('path');
 const app = express(); //Creamos una constante con la carga de server express
 const PUERTO = 3000;
 
+console.log('Estoy vivo!' + '\n');
+
+console.log('Desarrollo Backend grupo 4' + '\n');
+
+
 app.use(cors()); //Aplicamos filtros sobre todos los paquetes recibidos a cors
 app.use(express.json()); //Convierte el texto plano en un objeto JavaScript
 

@@ -1,13 +1,3 @@
+=== LOG INICIADO: 2026-06-20T22:37:46.157Z ===
 
-
-
-
-
-
-
-
-
-
-
-
-
+[BUNKER CENTRAL] Escuchando en puerto 3000
