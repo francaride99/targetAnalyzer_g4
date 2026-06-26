@@ -44,7 +44,7 @@ app.post('/api/escanear',(req, res)=>{ //Generamos una excepcion a POST
   log(`[T2] Backend → Robot: ${tiempos[id].t2} (Delay: ${tiempos[id].t2 - tiempos[id].t1}ms)`);
   
   // Enviar al robot
-  fetch('http://localhost:5000/api/procesar', {
+  fetch('http://localhost:3000/api/procesar', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url: urlRecibida, id })
