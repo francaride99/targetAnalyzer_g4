@@ -9,13 +9,12 @@ const path = require('path');
 const app = express(); //Creamos una constante con la carga de server express
 const PUERTO = 3001;
 
-const ejecutarExtraccion = require('./robot_mod');
+const ejecutarExtraccion = require('./robot_mod'); //Me traigo el robot
 
-console.log('Estoy vivo!' + '\n');
+app.use(express.static(path.join(__dirname, 'frontend'))); //Le pasamos a express el frontend
 
 console.log('Desarrollo Backend grupo 4' + '\n');
-
-
+  
 app.use(cors()); //Aplicamos filtros sobre todos los paquetes recibidos a cors
 app.use(express.json()); //Convierte el texto plano en un objeto JavaScript
 
@@ -34,6 +33,10 @@ function log(mensaje) {
 }
 
 let tiempos = {};
+
+app.get('/', (req, res) => {
+    res.send('Backend funcionando');
+});
 
 app.post('/api/escanear', async (req, res) => { //Generamos una excepcion a POST, se agrega async
 //Tenemos 2 objetos generados para las requerst y response	
@@ -65,16 +68,44 @@ app.post('/api/escanear', async (req, res) => { //Generamos una excepcion a POST
 
       const resultado = await ejecutarExtraccion(urlRecibida);
 
-      tiempos[id].t3 = Date.now();
-      tiempos[id].t4 = Date.now();
+      console.log(JSON.stringify(resultado, null, 2));
 
-      log(`[T3] Robot finalizó: ${tiempos[id].t3}`);
-      log(`[T4] Backend recibió resultado: ${tiempos[id].t4}`);
-      log(`[DATOS ROBOT] ${JSON.stringify(resultado)}`);
-      log(`TIEMPO TOTAL: ${tiempos[id].t4 - tiempos[id].t1}ms`);
-      log(`${'─'.repeat(60)}`);
+      const respuestaFrontend = {
 
-      res.json(resultado);
+      vista: resultado.title,
+
+      os: resultado.server,
+
+      ports: "N/D",
+
+      encryption: resultado.https ? "HTTPS" : "HTTP",
+
+      proxy1: resultado.ip,
+
+      proxy2: "-",
+
+      origin: resultado.domain,
+
+      latency: resultado.loadTime + " ms",
+
+      packets: resultado.resources,
+
+      alert: resultado.score
+
+    };
+
+    res.json(respuestaFrontend);
+
+      // tiempos[id].t3 = Date.now();
+      // tiempos[id].t4 = Date.now();
+
+      // log(`[T3] Robot finalizó: ${tiempos[id].t3}`);
+      // log(`[T4] Backend recibió resultado: ${tiempos[id].t4}`);
+      // log(`[DATOS ROBOT] ${JSON.stringify(resultado)}`);
+      // log(`TIEMPO TOTAL: ${tiempos[id].t4 - tiempos[id].t1}ms`);
+      // log(`${'─'.repeat(60)}`);
+
+      // res.json(resultado);
 
   } catch (err) {
 
