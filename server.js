@@ -9,11 +9,11 @@ const path = require('path');
 const app = express(); //Creamos una constante con la carga de server express
 const PUERTO = 3001;
 
-const ejecutarExtraccion = require('./robot_mod'); //Me traigo el robot
+const ejecutarExtraccion = require('./robot/robot_mod.js'); //Me traigo el robot
 
 app.use(express.static(path.join(__dirname, 'frontend'))); //Le pasamos a express el frontend
 
-console.log('Desarrollo Backend grupo 4' + '\n');
+console.log('Desarrollo Backend grupo 4' + '\n'); 
   
 app.use(cors()); //Aplicamos filtros sobre todos los paquetes recibidos a cors
 app.use(express.json()); //Convierte el texto plano en un objeto JavaScript
@@ -34,24 +34,84 @@ function log(mensaje) {
 
 let tiempos = {};
 
-app.get('/', (req, res) => {
-    res.send('Backend funcionando');
-});
 
-app.post('/api/escanear', async (req, res) => { //Generamos una excepcion a POST, se agrega async
-//Tenemos 2 objetos generados para las requerst y response	
-  const id = Date.now();
-  tiempos[id] = {};
+//NUEVA COMUNICACION CON ROBOT
+app.post('/api/escanear', async (req, res) => {
+
+    const id = Date.now();
+    tiempos[id] = {};
+
+    try {
+
+        tiempos[id].t1 = Date.now();
+        log(`[T1] Frontend → Backend: ${tiempos[id].t1}`);
+
+        const urlRecibida = req.body.url;
+
+        log(`[URL RECIBIDA] ${urlRecibida}`);
+
+        tiempos[id].t2 = Date.now();
+
+        log(`[T2] Backend → Robot: ${tiempos[id].t2}`);
+
+        const resultado = await ejecutarExtraccion(urlRecibida);
+
+        console.log("===== RESULTADO ROBOT =====");
+        console.log(JSON.stringify(resultado, null, 2));
+
+        tiempos[id].t3 = Date.now();
+
+        log(`[T3] Robot → Backend: ${tiempos[id].t3}`);
+
+        const respuestaFrontend = {
+
+            vista: resultado.title,
+
+            os: resultado.server,
+
+            ports: "N/D",
+
+            encryption: resultado.https ? "HTTPS" : "HTTP",
+
+            proxy1: resultado.ip,
+
+            proxy2: "-",
+
+            origin: resultado.domain,
+
+            latency: resultado.loadTime + " ms",
+
+            packets: resultado.resources,
+
+            alert: resultado.score
+
+        };
+
+        tiempos[id].t4 = Date.now();
+
+        log(`[T4] Respuesta enviada al Frontend`);
+
+        log(`TIEMPO TOTAL: ${tiempos[id].t4 - tiempos[id].t1} ms`);
+
+        log("------------------------------------------------------------");
+
+        return res.json(respuestaFrontend);
+
+    }
+    catch (err) {
+
+        log(`[ERROR ROBOT] ${err.message}`);
+
+        return res.status(500).json({
+            estado: "ERROR",
+            mensaje: err.message
+        });
+
+    }
+
+});
   
-  tiempos[id].t1 = Date.now();
-  log(`[T1] Frontend → Backend: ${tiempos[id].t1}`);
-  
-  const urlRecibida = req.body.url;
-  log(`[URL RECIBIDA] ${urlRecibida}`);
-  
-  tiempos[id].t2 = Date.now();
-  log(`[T2] Backend → Robot: ${tiempos[id].t2} (Delay: ${tiempos[id].t2 - tiempos[id].t1}ms)`);
-  
+  //LOGICA VIEJA POR HTTP ANTES DE INTEGRACION
   // // Enviar al robot PARTE VIEJA PEGANDO POR HTTP REQUESTs
   // fetch(`http://localhost:${PUERTO}/api/procesar`, {
   //   method: 'POST',
@@ -63,78 +123,32 @@ app.post('/api/escanear', async (req, res) => { //Generamos una excepcion a POST
   //   log(`[ERROR ROBOT] ${err.message}`); //Atrapamos el error en caso de quel robot falle por cuestiones de seguridad, etc
   // });
 
-  //NUEVA COMUNICACION CON ROBOT
-  try {
+  // tiempos[id].t3 = Date.now();
+  // tiempos[id].t4 = Date.now();
 
-      const resultado = await ejecutarExtraccion(urlRecibida);
+  // log(`[T3] Robot finalizó: ${tiempos[id].t3}`);
+  // log(`[T4] Backend recibió resultado: ${tiempos[id].t4}`);
+  // log(`[DATOS ROBOT] ${JSON.stringify(resultado)}`);
+  // log(`TIEMPO TOTAL: ${tiempos[id].t4 - tiempos[id].t1}ms`);
+  // log(`${'─'.repeat(60)}`);
 
-      console.log(JSON.stringify(resultado, null, 2));
+  // res.json(resultado);
 
-      const respuestaFrontend = {
-
-      vista: resultado.title,
-
-      os: resultado.server,
-
-      ports: "N/D",
-
-      encryption: resultado.https ? "HTTPS" : "HTTP",
-
-      proxy1: resultado.ip,
-
-      proxy2: "-",
-
-      origin: resultado.domain,
-
-      latency: resultado.loadTime + " ms",
-
-      packets: resultado.resources,
-
-      alert: resultado.score
-
-    };
-
-    res.json(respuestaFrontend);
-
-      // tiempos[id].t3 = Date.now();
-      // tiempos[id].t4 = Date.now();
-
-      // log(`[T3] Robot finalizó: ${tiempos[id].t3}`);
-      // log(`[T4] Backend recibió resultado: ${tiempos[id].t4}`);
-      // log(`[DATOS ROBOT] ${JSON.stringify(resultado)}`);
-      // log(`TIEMPO TOTAL: ${tiempos[id].t4 - tiempos[id].t1}ms`);
-      // log(`${'─'.repeat(60)}`);
-
-      // res.json(resultado);
-
-  } catch (err) {
-
-      log(`[ERROR ROBOT] ${err.message}`);
-
-      res.status(500).json({
-          estado: "ERROR",
-          mensaje: err.message
-      });
-
-  }
-  res.json({ estado: 'EXITO', id });
-});
-
-// // T4: Robot responde TAMBIEN ES VERSION POR HTTP REQUESTs
-// app.post('/api/respuesta', (req, res) => {
-//   const { id, t3, datos } = req.body;
-  
-//   tiempos[id].t3 = t3;
-//   tiempos[id].t4 = Date.now();
-  
-//   log(`[T3] Robot → Backend: ${t3}`);
-//   log(`[T4] Backend recibió: ${tiempos[id].t4}`);
-//   log(`[DATOS ROBOT] ${JSON.stringify(datos)}`); //Convertimos la data en string para 
-//   log(`TIEMPO TOTAL: ${tiempos[id].t4 - tiempos[id].t1}ms`);
-//   log(`${'─'.repeat(60)}\n`); //Separamos texto para saber cuando arranca y termina cada log
-  
-//   res.json({ ok: true });
-// });
+  // // T4: Robot responde TAMBIEN ES VERSION POR HTTP REQUESTs
+  // app.post('/api/respuesta', (req, res) => {
+  //   const { id, t3, datos } = req.body;
+    
+  //   tiempos[id].t3 = t3;
+  //   tiempos[id].t4 = Date.now();
+    
+  //   log(`[T3] Robot → Backend: ${t3}`);
+  //   log(`[T4] Backend recibió: ${tiempos[id].t4}`);
+  //   log(`[DATOS ROBOT] ${JSON.stringify(datos)}`); //Convertimos la data en string para 
+  //   log(`TIEMPO TOTAL: ${tiempos[id].t4 - tiempos[id].t1}ms`);
+  //   log(`${'─'.repeat(60)}\n`); //Separamos texto para saber cuando arranca y termina cada log
+    
+  //   res.json({ ok: true });
+  // });
 
 app.listen(PUERTO, () => {
   log(`[BUNKER CENTRAL] Escuchando en puerto ${PUERTO}`); //Constante 3000
