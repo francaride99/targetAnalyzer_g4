@@ -7,7 +7,7 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const app = express(); //Creamos una constante con la carga de server express
-const PUERTO = 3000;
+const PUERTO = 3001;
 
 console.log('Estoy vivo!' + '\n');
 
@@ -17,9 +17,13 @@ console.log('Desarrollo Backend grupo 4' + '\n');
 app.use(cors()); //Aplicamos filtros sobre todos los paquetes recibidos a cors
 app.use(express.json()); //Convierte el texto plano en un objeto JavaScript
 
-// Crear/limpiar log.txt
+// Crear log.txt
 const logFile = path.join(__dirname, 'log.txt');
-fs.writeFileSync(logFile, `=== LOG INICIADO: ${new Date().toISOString()} ===\n\n`);
+fs.appendFileSync(
+    logFile,
+    `\n\n=== SERVIDOR INICIADO: ${new Date().toLocaleString()} ===\n`
+);
+//AJUSTAR EL LOG PARA QUE GUARDE LA DATA
 
 // Función para escribir en log
 function log(mensaje) {
@@ -44,7 +48,7 @@ app.post('/api/escanear',(req, res)=>{ //Generamos una excepcion a POST
   log(`[T2] Backend → Robot: ${tiempos[id].t2} (Delay: ${tiempos[id].t2 - tiempos[id].t1}ms)`);
   
   // Enviar al robot
-  fetch('http://localhost:3000/api/procesar', {
+  fetch(`http://localhost:${PUERTO}/api/procesar`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url: urlRecibida, id })
@@ -76,6 +80,8 @@ app.post('/api/respuesta', (req, res) => {
 app.listen(PUERTO, () => {
   log(`[BUNKER CENTRAL] Escuchando en puerto ${PUERTO}`); //Constante 3000
 });
+
+//HACER MOCKEO DE LA INFO QUE VIENE DEL ROBOT
 
 
 

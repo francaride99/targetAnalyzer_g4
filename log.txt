@@ -1,3 +1,8 @@
-=== LOG INICIADO: 2026-06-20T22:37:46.157Z ===
 
+
+=== SERVIDOR INICIADO: 28/6/2026, 07:36:03 ===
 [BUNKER CENTRAL] Escuchando en puerto 3000
+
+
+=== SERVIDOR INICIADO: 28/6/2026, 07:38:03 ===
+[BUNKER CENTRAL] Escuchando en puerto 3001
