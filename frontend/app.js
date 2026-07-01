@@ -364,39 +364,59 @@ volumeSlider.addEventListener('input', () => {
        Campos faltantes muestran el valor demo
        como fallback, sin romper la UI.
     ──────────────────────────────────────── */
-    async function callBackend(url) {
+    // async function callBackend(url) { -->>> COMENTO VERSION DEMO
 
-        /* --- MODO DEMO (eliminar cuando el backend esté listo) --- */
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                resolve({
-                    vista:      'Feed de cámara de seguridad interceptado.',
-                    os:         'Unknown UNIX-based',
-                    ports:      '22(SSH), 443(HTTPS), 8080(PROXY)',
-                    encryption: 'AES-256 (Vulnerado)',
-                    proxy1:     'Moscú (192.168.x.x)',
-                    proxy2:     'Berlín (10.0.x.x)',
-                    origin:     'Dillinger Grid - Sector 4',
-                    latency:    '14ms',
-                    packets:    '1,024',
-                    alert:      'IGNORANTE'
-                });
-            }, 4000);
-        });
-        /* --------------------------------------------------------- */
+    //     /* --- MODO DEMO (eliminar cuando el backend esté listo) --- */
+    //     return new Promise((resolve) => {
+    //         setTimeout(() => {
+    //             resolve({
+    //                 vista:      'Feed de cámara de seguridad interceptado.',
+    //                 os:         'Unknown UNIX-based',
+    //                 ports:      '22(SSH), 443(HTTPS), 8080(PROXY)',
+    //                 encryption: 'AES-256 (Vulnerado)',
+    //                 proxy1:     'Moscú (192.168.x.x)',
+    //                 proxy2:     'Berlín (10.0.x.x)',
+    //                 origin:     'Dillinger Grid - Sector 4',
+    //                 latency:    '14ms',
+    //                 packets:    '1,024',
+    //                 alert:      'IGNORANTE'
+    //             });
+    //         }, 4000);
+    //     });
+    //     /* --------------------------------------------------------- */
 
-        /* --- INTEGRACIÓN REAL (descomentar cuando esté disponible) ---
-        const response = await fetch('/api/scan', {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ target_url: url })
-        });
-        if (!response.ok) {
-            throw new Error(`Error del servidor: HTTP ${response.status}`);
-        }
-        return await response.json();
-        ------------------------------------------------------------- */
+    //     /* --- INTEGRACIÓN REAL (descomentar cuando esté disponible) ---
+    //     const response = await fetch('/api/scan', {
+    //         method:  'POST',
+    //         headers: { 'Content-Type': 'application/json' },
+    //         body:    JSON.stringify({ target_url: url })
+    //     });
+    //     if (!response.ok) {
+    //         throw new Error(`Error del servidor: HTTP ${response.status}`);
+    //     }
+    //     return await response.json();
+    //     ------------------------------------------------------------- */
+    // }
+
+
+async function callBackend(url) {
+
+    const response = await fetch('/api/escanear', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            url: url
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error(`Error del servidor: HTTP ${response.status}`);
     }
+
+    return await response.json();
+}
 
 
     /* ────────────────────────────────────────

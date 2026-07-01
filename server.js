@@ -1,162 +1,132 @@
-
-
-//FIUMBA
-
 const express = require('express');
 const cors = require('cors');
-const fs = require('fs');
+const dns = require('dns/promises');
 const path = require('path');
-const app = express(); //Creamos una constante con la carga de server express
-const PUERTO = 3001;
 
-const ejecutarExtraccion = require('./robot/robot_mod.js'); //Me traigo el robot
+const Logger = require('../utils/logger');
+const ejecutarExtraccion = require('../robot/robot_mod');
 
-app.use(express.static(path.join(__dirname, 'frontend'))); //Le pasamos a express el frontend
+const app = express();
+const PUERTO = process.env.PORT || 3000;
+const logger = new Logger('Server');
 
-console.log('Desarrollo Backend grupo 4' + '\n'); 
-  
-app.use(cors()); //Aplicamos filtros sobre todos los paquetes recibidos a cors
-app.use(express.json()); //Convierte el texto plano en un objeto JavaScript
+app.use(express.static(path.join(__dirname, '..', 'frontend')));
+app.use(cors());
+app.use(express.json());
 
-// Crear log.txt
-const logFile = path.join(__dirname, 'log.txt');
-fs.appendFileSync(
-    logFile,
-    `\n\n=== SERVIDOR INICIADO: ${new Date().toLocaleString()} ===\n`
-);
-//AJUSTAR EL LOG PARA QUE GUARDE LA DATA
-
-// Función para escribir en log
-function log(mensaje) {
-  console.log(mensaje);
-  fs.appendFileSync(logFile, mensaje + '\n');
-}
-
-let tiempos = {};
-
-
-//NUEVA COMUNICACION CON ROBOT
-app.post('/api/escanear', async (req, res) => {
-
-    const id = Date.now();
-    tiempos[id] = {};
-
-    try {
-
-        tiempos[id].t1 = Date.now();
-        log(`[T1] Frontend → Backend: ${tiempos[id].t1}`);
-
-        const urlRecibida = req.body.url;
-
-        log(`[URL RECIBIDA] ${urlRecibida}`);
-
-        tiempos[id].t2 = Date.now();
-
-        log(`[T2] Backend → Robot: ${tiempos[id].t2}`);
-
-        const resultado = await ejecutarExtraccion(urlRecibida);
-
-        console.log("===== RESULTADO ROBOT =====");
-        console.log(JSON.stringify(resultado, null, 2));
-
-        tiempos[id].t3 = Date.now();
-
-        log(`[T3] Robot → Backend: ${tiempos[id].t3}`);
-
-        const respuestaFrontend = {
-
-            vista: resultado.title,
-
-            os: resultado.server,
-
-            ports: "N/D",
-
-            encryption: resultado.https ? "HTTPS" : "HTTP",
-
-            proxy1: resultado.ip,
-
-            proxy2: "-",
-
-            origin: resultado.domain,
-
-            latency: resultado.loadTime + " ms",
-
-            packets: resultado.resources,
-
-            alert: resultado.score
-
-        };
-
-        tiempos[id].t4 = Date.now();
-
-        log(`[T4] Respuesta enviada al Frontend`);
-
-        log(`TIEMPO TOTAL: ${tiempos[id].t4 - tiempos[id].t1} ms`);
-
-        log("------------------------------------------------------------");
-
-        return res.json(respuestaFrontend);
-
-    }
-    catch (err) {
-
-        log(`[ERROR ROBOT] ${err.message}`);
-
-        return res.status(500).json({
-            estado: "ERROR",
-            mensaje: err.message
-        });
-
-    }
-
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok', service: 'target-analyzer-integrado' });
 });
-  
-  //LOGICA VIEJA POR HTTP ANTES DE INTEGRACION
-  // // Enviar al robot PARTE VIEJA PEGANDO POR HTTP REQUESTs
-  // fetch(`http://localhost:${PUERTO}/api/procesar`, {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ url: urlRecibida, id })
-  // }).then(res => res.json()).then(data => {
-  //   log(`[RESPUESTA ROBOT - HTTP 200] ${JSON.stringify(data)}`);
-  // }).catch(err => {
-  //   log(`[ERROR ROBOT] ${err.message}`); //Atrapamos el error en caso de quel robot falle por cuestiones de seguridad, etc
-  // });
 
-  // tiempos[id].t3 = Date.now();
-  // tiempos[id].t4 = Date.now();
+app.post('/api/escanear', async (req, res) => {
+  const tiempos = {
+    recibidoEn: Date.now(),
+  };
 
-  // log(`[T3] Robot finalizó: ${tiempos[id].t3}`);
-  // log(`[T4] Backend recibió resultado: ${tiempos[id].t4}`);
-  // log(`[DATOS ROBOT] ${JSON.stringify(resultado)}`);
-  // log(`TIEMPO TOTAL: ${tiempos[id].t4 - tiempos[id].t1}ms`);
-  // log(`${'─'.repeat(60)}`);
+  try {
+    const urlRecibida = req.body?.url || req.body?.urlObjetivo;
 
-  // res.json(resultado);
+    if (!urlRecibida || typeof urlRecibida !== 'string') {
+      logger.warn('La URL objetivo no es correcta');
+      return res.status(400).json({
+        estado: 'ERROR',
+        mensaje: 'Debe enviar una URL valida.',
+      });
+    }
 
-  // // T4: Robot responde TAMBIEN ES VERSION POR HTTP REQUESTs
-  // app.post('/api/respuesta', (req, res) => {
-  //   const { id, t3, datos } = req.body;
-    
-  //   tiempos[id].t3 = t3;
-  //   tiempos[id].t4 = Date.now();
-    
-  //   log(`[T3] Robot → Backend: ${t3}`);
-  //   log(`[T4] Backend recibió: ${tiempos[id].t4}`);
-  //   log(`[DATOS ROBOT] ${JSON.stringify(datos)}`); //Convertimos la data en string para 
-  //   log(`TIEMPO TOTAL: ${tiempos[id].t4 - tiempos[id].t1}ms`);
-  //   log(`${'─'.repeat(60)}\n`); //Separamos texto para saber cuando arranca y termina cada log
-    
-  //   res.json({ ok: true });
-  // });
+    logger.info(`[T1] Frontend -> Backend: ${tiempos.recibidoEn}`);
+    logger.info(`[URL RECIBIDA] ${urlRecibida}`);
+
+    tiempos.enviadoRobotEn = Date.now();
+    logger.info(`[T2] Backend -> Robot: ${tiempos.enviadoRobotEn}`);
+
+    const resultadoRobot = await ejecutarExtraccion(urlRecibida);
+
+    tiempos.recibidoRobotEn = Date.now();
+    logger.info(`[T3] Robot -> Backend: ${tiempos.recibidoRobotEn}`);
+
+    const ipDetectada = await resolverIp(urlRecibida);
+
+    tiempos.respondidoFrontendEn = Date.now();
+    const respuestaFrontend = construirRespuestaFrontend(resultadoRobot, ipDetectada, tiempos);
+
+    logger.info(`[T4] Respuesta enviada al Frontend: ${tiempos.respondidoFrontendEn}`);
+    logger.info(`TIEMPO TOTAL: ${respuestaFrontend.tiemposBackend.totalMs} ms`);
+
+    return res.json(respuestaFrontend);
+  } catch (error) {
+    logger.error(`[ERROR ROBOT] ${error.message}`);
+
+    return res.status(500).json({
+      estado: 'ERROR',
+      mensaje: error.message || 'Falla en la extraccion del objetivo.',
+    });
+  }
+});
+
+app.get('*', (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
+});
 
 app.listen(PUERTO, () => {
-  log(`[BUNKER CENTRAL] Escuchando en puerto ${PUERTO}`); //Constante 3000
+  logger.info(`[BUNKER CENTRAL] Escuchando en puerto ${PUERTO}`);
 });
 
-//HACER MOCKEO DE LA INFO QUE VIENE DEL ROBOT
+async function resolverIp(urlObjetivo) {
+  try {
+    const dominio = new URL(String(urlObjetivo).trim()).hostname;
+    const resultado = await dns.lookup(dominio);
+    return resultado.address;
+  } catch {
+    return null;
+  }
+}
 
+function construirRespuestaFrontend(resultado, ipDetectada, tiempos) {
+  const metricas = resultado.metricas || {};
+  const seguridad = resultado.seguridad || {};
+  const medios = resultado.medios || {};
 
+  return {
+    estado: resultado.estado,
+    mensaje: resultado.mensaje,
+    objetivo: resultado.objetivo,
+    identidad: {
+      titulo: resultado.identidad?.titulo || medios.coreHeadline || 'Sin titulo',
+      descripcion: resultado.identidad?.descripcion || 'Sin descripcion',
+      dominio: medios.targetDomain || obtenerDominioSeguro(resultado.objetivo),
+      ip: ipDetectada,
+    },
+    tecnologias: resultado.tecnologias || { detected: [], byCategory: {}, all: [] },
+    seguridad: {
+      tipoConexion: metricas.certSslVigente ? 'HTTPS' : 'HTTP',
+      sslVigente: Boolean(metricas.certSslVigente),
+      score: typeof seguridad.score === 'number' ? seguridad.score : null,
+      headers: seguridad.headers || [],
+    },
+    metricas: {
+      tiempoRespuestaMs: metricas.tiempoRespuestaMs ?? null,
+      pesoDocumentoKb: metricas.pesoDocumentoKb ?? null,
+      conteo: metricas.conteo || {},
+      topWords: metricas.topWords || [],
+    },
+    medios,
+    enlaces: resultado.enlaces || { vectorCount: 0, items: [] },
+    redesSociales: resultado.redesSociales || [],
+    tiemposBackend: {
+      recibidoEn: tiempos.recibidoEn,
+      enviadoRobotEn: tiempos.enviadoRobotEn,
+      recibidoRobotEn: tiempos.recibidoRobotEn,
+      respondidoFrontendEn: tiempos.respondidoFrontendEn,
+      totalMs: tiempos.respondidoFrontendEn - tiempos.recibidoEn,
+    },
+  };
+}
 
-
-
+function obtenerDominioSeguro(urlObjetivo) {
+  try {
+    return new URL(String(urlObjetivo).trim()).hostname;
+  } catch {
+    return null;
+  }
+}

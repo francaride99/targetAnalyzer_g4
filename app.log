@@ -1,0 +1,16 @@
+[2026-06-29T22:58:25.297Z] [ERROR] [Robot] Could not find Chrome (ver. 137.0.7151.119). This can occur if either
+ 1. you did not perform an installation before running the script (e.g. `npx puppeteer browsers install chrome-headless-shell`) or
+ 2. your cache path is incorrectly configured (which is: /Users/francisco/.cache/puppeteer).
+For (2), check out our guide on configuring puppeteer at https://pptr.dev/guides/configuration.
+[2026-06-29T22:58:39.763Z] [ERROR] [Robot] Could not find Chrome (ver. 137.0.7151.119). This can occur if either
+ 1. you did not perform an installation before running the script (e.g. `npx puppeteer browsers install chrome-headless-shell`) or
+ 2. your cache path is incorrectly configured (which is: /Users/francisco/.cache/puppeteer).
+For (2), check out our guide on configuring puppeteer at https://pptr.dev/guides/configuration.
+[2026-07-01T12:53:30.538Z] [ERROR] [Robot] Could not find Chrome (ver. 137.0.7151.119). This can occur if either
+ 1. you did not perform an installation before running the script (e.g. `npx puppeteer browsers install chrome-headless-shell`) or
+ 2. your cache path is incorrectly configured (which is: /Users/francisco/.cache/puppeteer).
+For (2), check out our guide on configuring puppeteer at https://pptr.dev/guides/configuration.
+[2026-07-01T13:06:15.220Z] [ERROR] [Robot] Could not find Chrome (ver. 137.0.7151.119). This can occur if either
+ 1. you did not perform an installation before running the script (e.g. `npx puppeteer browsers install chrome-headless-shell`) or
+ 2. your cache path is incorrectly configured (which is: /Users/francisco/.cache/puppeteer).
+For (2), check out our guide on configuring puppeteer at https://pptr.dev/guides/configuration.
